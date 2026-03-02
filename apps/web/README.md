@@ -1,19 +1,24 @@
-# Frontend
+# Web App
 
-Frontend scaffold for the shipping estimator project.
+Next.js frontend for Shipping Charge Estimator.
 
-## Stack
+## Environment
 
-- Next.js 16 (App Router) + TypeScript
-- Tailwind CSS v4
-- shadcn/ui components
-- React Hook Form + Zod validation
-- TanStack Query
-
-## Commands
+Copy `.env.example` to `.env.local`:
 
 ```bash
-npm run dev
-npm run lint
-npm run build
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api/v1
 ```
+
+## Run
+
+```bash
+npm install
+npm run dev
+```
+
+## Routes
+
+- `/calculator`
+- `/admin`
+- `/history`
