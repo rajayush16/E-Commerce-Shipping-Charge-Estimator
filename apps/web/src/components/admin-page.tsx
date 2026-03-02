@@ -47,6 +47,9 @@ const productSchema = z.object({
   sellerId: z.string().uuid("Select seller"),
   weightKg: z.number().positive(),
   priceRs: z.number().optional(),
+  lengthCm: z.number().positive().optional(),
+  widthCm: z.number().positive().optional(),
+  heightCm: z.number().positive().optional(),
 });
 
 type SellerForm = z.infer<typeof sellerSchema>;
@@ -247,7 +250,8 @@ export function AdminPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Weight</TableHead>
+                  <TableHead>Selling Price</TableHead>
+                  <TableHead>Attributes</TableHead>
                   <TableHead>Seller</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -256,7 +260,8 @@ export function AdminPage() {
                 {(productsQuery.data?.items ?? []).map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{row.name}</TableCell>
-                    <TableCell>{row.weightKg} kg</TableCell>
+                    <TableCell>{row.priceRs ? `Rs ${row.priceRs}` : "-"}</TableCell>
+                    <TableCell>{formatProductAttributes(row)}</TableCell>
                     <TableCell>{row.seller?.name ?? row.sellerId.slice(0, 8)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -494,8 +499,24 @@ function ProductModal({
   const form = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
     defaultValues: item
-      ? { name: item.name, sellerId: item.sellerId, weightKg: item.weightKg, priceRs: item.priceRs ?? 0 }
-      : { name: "", sellerId: sellers[0]?.id ?? "", weightKg: 1, priceRs: 0 },
+      ? {
+          name: item.name,
+          sellerId: item.sellerId,
+          weightKg: item.weightKg,
+          priceRs: item.priceRs ?? undefined,
+          lengthCm: item.lengthCm ?? undefined,
+          widthCm: item.widthCm ?? undefined,
+          heightCm: item.heightCm ?? undefined,
+        }
+      : {
+          name: "",
+          sellerId: sellers[0]?.id ?? "",
+          weightKg: 1,
+          priceRs: undefined,
+          lengthCm: undefined,
+          widthCm: undefined,
+          heightCm: undefined,
+        },
   });
   const mutation = useMutation({
     mutationFn: (values: ProductForm) =>
@@ -549,6 +570,9 @@ function ProductModal({
             />
             <SimpleField form={form} name="weightKg" label="Weight (kg)" type="number" />
             <SimpleField form={form} name="priceRs" label="Price (Rs)" type="number" />
+            <SimpleField form={form} name="lengthCm" label="Length (cm)" type="number" />
+            <SimpleField form={form} name="widthCm" label="Width (cm)" type="number" />
+            <SimpleField form={form} name="heightCm" label="Height (cm)" type="number" />
             <DialogFooter>
               <Button type="submit" disabled={mutation.isPending}>
                 Save
@@ -559,6 +583,23 @@ function ProductModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+function formatProductAttributes(product: Product): string {
+  const weight = `weight: ${product.weightKg}kg`;
+  const hasDimensions =
+    product.lengthCm !== null &&
+    product.lengthCm !== undefined &&
+    product.widthCm !== null &&
+    product.widthCm !== undefined &&
+    product.heightCm !== null &&
+    product.heightCm !== undefined;
+
+  if (!hasDimensions) {
+    return `{ ${weight} }`;
+  }
+
+  return `{ ${weight}, dimension: ${product.lengthCm}cm x ${product.widthCm}cm x ${product.heightCm}cm }`;
 }
 
 function SimpleField<TFieldValues extends FieldValues>({
