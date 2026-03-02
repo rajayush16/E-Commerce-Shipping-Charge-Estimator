@@ -7,41 +7,66 @@ export class RedisService implements OnModuleDestroy {
   private readonly client: Redis;
 
   constructor() {
-    this.client = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
+    const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
+    this.client = new Redis(redisUrl, {
+      maxRetriesPerRequest: 1,
+      enableOfflineQueue: false,
+      retryStrategy: () => null,
+      lazyConnect: true,
+    });
+
+    this.client.on('error', (error) => {
+      this.logger.warn(
+        JSON.stringify({
+          type: 'redis_error',
+          message: error.message,
+        }),
+      );
+    });
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.client.quit();
+    try {
+      await this.client.quit();
+    } catch {
+      // Ignore shutdown errors when redis is not reachable.
+    }
   }
 
   async get<T>(key: string): Promise<T | null> {
-    const value = await this.client.get(key);
-    if (!value) {
+    const value = await this.safe(() => this.client.get(key), null);
+    if (value === null) {
       return null;
     }
     return JSON.parse(value) as T;
   }
 
   async set(key: string, value: unknown, ttlSeconds: number): Promise<void> {
-    await this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+    await this.safe(
+      () => this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds),
+      'OK',
+    );
   }
 
   async del(key: string): Promise<void> {
-    await this.client.del(key);
+    await this.safe(() => this.client.del(key), 0);
   }
 
   async getNearestWarehouseVersion(): Promise<number> {
     const key = 'nearestWarehouse:version';
-    const existing = await this.client.get(key);
+    const existing = await this.safe(() => this.client.get(key), null);
     if (!existing) {
-      await this.client.set(key, '1');
+      await this.safe(() => this.client.set(key, '1'), 'OK');
       return 1;
     }
     return Number(existing);
   }
 
   async bumpNearestWarehouseVersion(): Promise<number> {
-    const version = await this.client.incr('nearestWarehouse:version');
+    const version = await this.safe(
+      () => this.client.incr('nearestWarehouse:version'),
+      1,
+    );
     this.logger.log(
       JSON.stringify({
         type: 'cache_invalidation',
@@ -61,5 +86,20 @@ export class RedisService implements OnModuleDestroy {
 
   logCacheEvent(payload: Record<string, unknown>): void {
     this.logger.log(JSON.stringify(payload));
+  }
+
+  private async safe<T>(operation: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      this.logger.warn(
+        JSON.stringify({
+          type: 'redis_unavailable_fallback',
+          message:
+            error instanceof Error ? error.message : 'Unknown redis error',
+        }),
+      );
+      return fallback;
+    }
   }
 }
