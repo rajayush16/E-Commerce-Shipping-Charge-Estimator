@@ -1,4 +1,7 @@
-import { calculatePricing, selectTransportMode } from './shipping.constants';
+import {
+  calculatePricing,
+  selectTransportMode,
+} from '../../src/shipping/shipping.constants';
 
 describe('selectTransportMode', () => {
   it('uses MINI_VAN below 100 km', () => {

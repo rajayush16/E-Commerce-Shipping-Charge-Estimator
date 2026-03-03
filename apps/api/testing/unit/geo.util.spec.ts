@@ -1,4 +1,4 @@
-import { haversineDistanceKm } from './geo.util';
+import { haversineDistanceKm } from '../../src/shipping/geo.util';
 
 describe('haversineDistanceKm', () => {
   it('calculates 0 for same point', () => {

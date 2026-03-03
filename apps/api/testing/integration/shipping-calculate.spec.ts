@@ -1,12 +1,12 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { RedisService } from '../src/redis/redis.service';
-import { ShippingController } from '../src/shipping/shipping.controller';
-import { ShippingService } from '../src/shipping/shipping.service';
-import { HttpExceptionFilter } from '../src/shared/http-exception.filter';
-import { ResponseInterceptor } from '../src/shared/response.interceptor';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { RedisService } from '../../src/redis/redis.service';
+import { ShippingController } from '../../src/shipping/shipping.controller';
+import { ShippingService } from '../../src/shipping/shipping.service';
+import { HttpExceptionFilter } from '../../src/shared/http-exception.filter';
+import { ResponseInterceptor } from '../../src/shared/response.interceptor';
 
 class InMemoryRedisService {
   private readonly storage = new Map<string, string>();
